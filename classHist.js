@@ -14,8 +14,35 @@ var margins ={
   left:50,
   right:10
 }
+
 day = 1;
 index = 0;
+
+
+var changeToDay = function()
+{
+  var input = document.getElementById("newDay").value;
+  if (input<15)
+  {
+    index = input-1;
+  }
+  else if (input<30)
+  {
+    index = input-2;
+  }
+  else {
+    index = input-3
+  }
+  var data = d3.json("classData.json");
+  data.then(function(data){
+    updateScreen(index,data);
+  }
+  ,
+  function(err){
+    console.log(err);
+  })
+  document.getElementById("newDay").value = "";
+}
 
 
 
@@ -34,7 +61,10 @@ var initializeScreen = function(data)
   var barWidth = width/data.length;
 
 
-  var dayP = body.append("text").text(day).classed("dayOn",true);
+
+
+
+  var dayP = body.append("text").text("Day: "+day).classed("dayOn",true);
 
   var dayData = getDataForDay(data,index);
 
@@ -53,6 +83,9 @@ var initializeScreen = function(data)
                  .domain([0,data.length])
                  .range([height,0]);
 
+  var colors = d3.scaleOrdinal(d3.schemeSet2);
+
+
   var barArea = svg.append("g")
     .selectAll("rect")
     .data(bins)
@@ -67,7 +100,30 @@ var initializeScreen = function(data)
     return height + margins.top - yScale(data.length - d.length);})
     .attr("width",barWidth-10)
     .attr("height",function(d){
-      return  yScale(data.length - d.length);});
+      return  yScale(data.length - d.length);})
+    .attr("fill",function(d){
+      return colors(d.length);
+    });
+
+
+    svg.append("g")
+       .selectAll("text")
+       .data(bins)
+       .enter()
+       .append("text")
+       .attr("x",function(d,i){
+         console.log("hi");
+         return 68+xScale(d.x0);
+       })
+       .attr("y",function(d){
+       return height + margins.top - yScale(data.length - d.length)-10;})
+       .text(function(d){
+         if (d.length!=0)
+         {
+         return d.length;
+       }
+       });
+
 
       var xAxis = d3.axisBottom(xScale);
       var yAxis = d3.axisLeft(yScale);
@@ -76,7 +132,7 @@ var initializeScreen = function(data)
 
       svg.append("g").classed("yAxis",true)
                 .call(yAxis)
-                .attr("transform","translate("+(margins.left+20)+","+(margins.top)+")");
+                .attr("transform","translate("+(margins.left+10)+","+(margins.top)+")");
       svg.append("g").classed("xAxis",true)
                 .call(xAxis)
                 .attr("transform","translate("+(margins.left+20)+","+(margins.top+height)+")");
@@ -117,12 +173,18 @@ var initializeScreen = function(data)
                     .domain([0,11])
                     .range([0,width]);
 
+      var yScale = d3.scaleLinear()
+                     .domain([0,data.length])
+                     .range([height,0]);
       var binMaker = d3.histogram()
                       .domain(xScale.domain())
                       .thresholds(xScale.ticks(10));
 
       var bins = binMaker(dayData);
       day = data[0].quizes[theIndex].day;
+
+      var colors = d3.scaleOrdinal(d3.schemeSet2);
+
 
       var barArea = d3.select("svg")
         .selectAll("rect")
@@ -138,8 +200,29 @@ var initializeScreen = function(data)
           //console.log(d.length);
         return height + margins.top - yScale(data.length - d.length);})
         .attr("width",barWidth-10)
-        .attr("height",function(d){
-          return  yScale(data.length - d.length);});
+        .attr("height",function(d){return  yScale(data.length - d.length);})
+        .attr("fill",function(d){
+            return colors(d.length);
+          });
+
+          d3.select("svg")
+             .selectAll("text")
+             .data(bins)
+             .transition()
+             .duration(1000)
+             .ease(d3.easeCubic)
+             .attr("x",function(d,i){
+               console.log("hi");
+               return 68+xScale(d.x0);
+             })
+             .attr("y",function(d){
+             return height + margins.top - yScale(data.length - d.length)-10;})
+             .text(function(d){
+               if (d.length!=0)
+               {
+               return d.length;
+             }
+             });
 
         var prevButton = d3.select("body").select(".prevButton")
         .on("click",function(){updateScreen(index-1,data, "prev",yScale);});
@@ -147,7 +230,7 @@ var initializeScreen = function(data)
         var nextButton = d3.select("body").select(".nextButton")
         .on("click",function(){updateScreen(index+1,data, "next",yScale);});
 
-        var dayP = d3.select(".dayOn").text("    "+(day)+"    ");
+        var dayP = d3.select(".dayOn").text("Day: "+(day)+"    ");
 
     }
 
