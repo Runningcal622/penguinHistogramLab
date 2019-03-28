@@ -14,6 +14,10 @@ var margins ={
   left:50,
   right:10
 }
+day = 1;
+index = 0;
+
+
 
 var initializeScreen = function(data)
 {
@@ -30,10 +34,9 @@ var initializeScreen = function(data)
   var barWidth = width/data.length;
 
 
-  var day = 1;
   var dayP = body.append("text").text(day).classed("dayOn",true);
 
-  var dayData = getDataForDay(data,day-1);
+  var dayData = getDataForDay(data,index);
 
   console.log(dayData);
   var xScale = d3.scaleLinear()
@@ -57,7 +60,7 @@ var initializeScreen = function(data)
     .append("rect")
     .attr("x",function(d,i){
       //console.log("hi");
-      return 102.5+xScale(d.x0);
+      return 68+xScale(d.x0);
     })
     .attr("y",function(d){
       console.log(d.length);
@@ -80,17 +83,17 @@ var initializeScreen = function(data)
 
       var prevButton = body.append("button").classed("prevButton",true)
       .text("Prev")
-      .on("click",function(){updateScreen(day-2,data, "prev");});
+      .on("click",function(){updateScreen(index-1,data, "prev",yScale);});
 
       var nextButton = body.append("button").classed("nextButton",true)
       .text("Next")
-      .on("click",function(){updateScreen(day,data, "next");});
+      .on("click",function(){updateScreen(index+1,data, "next",yScale);});
 
     }
 
 
 
-    var updateScreen = function(newDay,data, change)
+    var updateScreen = function(theIndex,data, change,yScale)
     {
       var width = 400;
       var height = 400;
@@ -98,27 +101,20 @@ var initializeScreen = function(data)
       height = height-margins.top-margins.bottom;
       var barWidth = width/data.length;
       var day = d3.select(".dayOn").textContent
-      if (change==="next")
-      {
-        day+=1;
-      }
-      else {
-        day-=1;
-      }
 
-      if (day===-1)
+      if (theIndex===-1)
       {
-        day=0;
+        theIndex=0;
       }
-      if (day===38)
+      if (theIndex===38)
       {
-        day = 37;
+        theIndex = 37;
       }
+      index=theIndex;
 
-      var dayData = getDataForDay(data,day-1);
-
+      var dayData = getDataForDay(data,theIndex);
       var xScale = d3.scaleLinear()
-                    .domain([0,10])
+                    .domain([0,11])
                     .range([0,width]);
 
       var binMaker = d3.histogram()
@@ -126,7 +122,7 @@ var initializeScreen = function(data)
                       .thresholds(xScale.ticks(10));
 
       var bins = binMaker(dayData);
-
+      day = data[0].quizes[theIndex].day;
 
       var barArea = d3.select("svg")
         .selectAll("rect")
@@ -134,19 +130,24 @@ var initializeScreen = function(data)
         .transition()
         .duration(1000)
         .ease(d3.easeCubic)
+        .attr("x",function(d,i){
+          //console.log("hi");
+          return 68+xScale(d.x0);
+        })
         .attr("y",function(d){
+          //console.log(d.length);
         return height + margins.top - yScale(data.length - d.length);})
+        .attr("width",barWidth-10)
         .attr("height",function(d){
           return  yScale(data.length - d.length);});
 
-          var prevButton = d3.select("body").select(".prevButton")
-          .on("click",function(){updateScreen(day-1,data, "prev");});
-          console.log("after 1 button "+day);
-          var nextButton = d3.select("body").select(".nextButton")
-          .on("click",function(){updateScreen(day+1,data, "next");});
+        var prevButton = d3.select("body").select(".prevButton")
+        .on("click",function(){updateScreen(index-1,data, "prev",yScale);});
+      //  console.log("after 1 button "+day);
+        var nextButton = d3.select("body").select(".nextButton")
+        .on("click",function(){updateScreen(index+1,data, "next",yScale);});
 
-        var dayP = d3.select(".dayOn").text("    "+(data[0].quizes[day-1].day)+"    ");
-
+        var dayP = d3.select(".dayOn").text("    "+(day)+"    ");
 
     }
 
@@ -154,12 +155,13 @@ var initializeScreen = function(data)
 
   var getDataForDay = function(data,indexOfDay)
   {
-    console.log("called");
     var listOfQuizGrades = [];
     data.forEach(function(d,i)
     {
+      //console.log(d.quizes);
       listOfQuizGrades.push(d.quizes[indexOfDay].grade);
     });
+    console.log(listOfQuizGrades);
 
     return listOfQuizGrades;
 
